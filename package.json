@@ -1,19 +1,16 @@
 {
     "name": "logger-for-yc-functions-with-tg-alert",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "логгер для функций яндекс облака, позволяет выводить логи используя уровни яндекса, при ошибках отправляет уведомления в группу телеграма",
     "keywords": [
         "yandex",
         "yandex cloud",
         "logger",
-        "serveless"
+        "serveless",
+        "alert"
     ],
     "main": "index.js",
-    "author": {
-        "name": "Evgeniy Politiko",
-        "email": "Jhon-mosk@yandex.ru",
-        "url": "https://jhon-mosk.ru/"
-    },
+    "author": "Evgeniy Politiko <Jhon-mosk@yandex.ru> (https://jhon-mosk.ru/)",
     "license": "MIT",
     "dependencies": {
         "telegraf": "*"
@@ -21,5 +18,8 @@
     "bugs": {
         "url": "https://github.com/Jhon-Mosk/logger-for-yc-functions-with-tg-alert/issues"
     },
-    "homepage": "https://github.com/Jhon-Mosk/logger-for-yc-functions-with-tg-alert/blob/master/README.md"
+    "homepage": "https://github.com/Jhon-Mosk/logger-for-yc-functions-with-tg-alert/blob/master/README.md",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    }
 }
