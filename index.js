@@ -9,9 +9,6 @@
  * TG_INFO_BOT добавить в группу TG_ERROR_GROUP
  */
 
-// заголовок сообщения
-const header = "tg-logger";
-
 const { Telegraf } = require("telegraf");
 
 /**
@@ -203,9 +200,10 @@ class Logger {
 /**
  *
  * @param {module} module - модуль в котором вызван логгер
+ * @param {module} header - заголовок для сообщения в тг
  * @returns {Logger} логгер
  */
-const getLogger = (module) => {
+const getLogger = (module, header) => {
     return new Logger(module, header);
 };
 
