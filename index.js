@@ -54,6 +54,10 @@ class Logger {
      * @param {String} [label=nul] - текст подписи к сообщению
      */
     debug(msg, label = null) {
+        if (msg instanceof Error) {
+            msg = msg.name + ": " + msg.message + "\n" + msg.stack;
+        }
+
         if (typeof msg === "object") {
             msg = JSON.stringify(msg, null, 2);
         }
@@ -80,6 +84,10 @@ class Logger {
      * @param {String} [label=nul] - текст подписи к сообщению
      */
     info(msg, label = null) {
+        if (msg instanceof Error) {
+            msg = msg.name + ": " + msg.message + "\n" + msg.stack;
+        }
+
         if (typeof msg === "object") {
             msg = JSON.stringify(msg, null, 2);
         }
@@ -104,6 +112,10 @@ class Logger {
      * @param {String} [label=nul] - текст подписи к сообщению
      */
     warn(msg, label = null) {
+        if (msg instanceof Error) {
+            msg = msg.name + ": " + msg.message + "\n" + msg.stack;
+        }
+
         if (typeof msg === "object") {
             msg = JSON.stringify(msg, null, 2);
         }
@@ -128,6 +140,13 @@ class Logger {
      * @param {String} [label=nul] - текст подписи к сообщению
      */
     error(msg, label = null) {
+        let tgMsg = msg;
+
+        if (msg instanceof Error) {
+            tgMsg = msg.name + ": " + msg.message;
+            msg = msg.name + ": " + msg.message + "\n" + msg.stack;
+        }
+
         if (typeof msg === "object") {
             msg = JSON.stringify(msg, null, 2);
         }
@@ -144,7 +163,7 @@ class Logger {
         logMsg.message += msg;
 
         console.error(JSON.stringify(logMsg));
-        this.#sendMessageToTg(process.env.TG_ERROR_SDB_ID, msg);
+        this.#sendMessageToTg(process.env.TG_ERROR_GROUP_ID, tgMsg);
     }
 
     /**
@@ -153,6 +172,13 @@ class Logger {
      * @param {String} [label=nul] - текст подписи к сообщению
      */
     fatal(msg, label = null) {
+        let tgMsg = msg;
+
+        if (msg instanceof Error) {
+            tgMsg = msg.name + ": " + msg.message;
+            msg = msg.name + ": " + msg.message + "\n" + msg.stack;
+        }
+
         if (typeof msg === "object") {
             msg = JSON.stringify(msg, null, 2);
         }
@@ -169,7 +195,7 @@ class Logger {
         logMsg.message += msg;
 
         console.error(JSON.stringify(logMsg));
-        this.#sendMessageToTg(process.env.TG_ERROR_SDB_ID, msg);
+        this.#sendMessageToTg(process.env.TG_ERROR_GROUP_ID, tgMsg);
     }
 
     /**
@@ -178,6 +204,10 @@ class Logger {
      * @param {String} [label=nul] - текст подписи к сообщению
      */
     trace(msg, label = null) {
+        if (msg instanceof Error) {
+            msg = msg.name + ": " + msg.message + "\n" + msg.stack;
+        }
+
         if (typeof msg === "object") {
             msg = JSON.stringify(msg, null, 2);
         }
