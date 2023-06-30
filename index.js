@@ -30,15 +30,19 @@ class Logger {
         this.header = header;
     }
 
-    #sendMessageToTg = async (groupId, msg) => {
+    /**
+     * для отправки сообщения в телеграм
+     * @param {Number} groupId - идентификатор группы для отправки
+     * @param {String} level - уровень записи
+     * @param {String} msg - сообщение
+     */
+    #sendMessageToTg = async (groupId, level, msg) => {
         const bot = new Telegraf(process.env.TG_INFO_BOT_TOKEN);
 
         try {
             await bot.telegram.sendMessage(
                 groupId,
-                `<b>${this.header}</b>\n\n<code>ERROR</code>: <u>${
-                    this.path
-                }:>></u> ${JSON.stringify(msg)}`,
+                `<b>${this.header}</b>\n\n<code>${level}</code>: ${JSON.stringify(msg)}`,
                 {
                     parse_mode: "HTML",
                 }
@@ -51,7 +55,7 @@ class Logger {
     /**
      * выводит сообщения для отладки
      * @param {String} msg - текст сообщения
-     * @param {String} [label=nul] - текст подписи к сообщению
+     * @param {String} [label=null] - текст подписи к сообщению
      */
     debug(msg, label = null) {
         if (msg instanceof Error) {
@@ -81,7 +85,7 @@ class Logger {
     /**
      * выводит информационные сообщения
      * @param {String} msg - текст сообщения
-     * @param {String} [label=nul] - текст подписи к сообщению
+     * @param {String} [label=null] - текст подписи к сообщению
      */
     info(msg, label = null) {
         if (msg instanceof Error) {
@@ -109,7 +113,7 @@ class Logger {
     /**
      * выводит предупреждения
      * @param {String} msg - текст сообщения
-     * @param {String} [label=nul] - текст подписи к сообщению
+     * @param {String} [label=null] - текст подписи к сообщению
      */
     warn(msg, label = null) {
         if (msg instanceof Error) {
@@ -137,71 +141,75 @@ class Logger {
     /**
      * выводит ошибки
      * @param {String} msg - текст сообщения
-     * @param {String} [label=nul] - текст подписи к сообщению
+     * @param {String} [label=null] - текст подписи к сообщению
      */
-    error(msg, label = null) {
-        let tgMsg = msg;
-
-        if (msg instanceof Error) {
-            tgMsg = msg.name + ": " + msg.message;
-            msg = msg.name + ": " + msg.message + "\n" + msg.stack;
-        }
-
-        if (typeof msg === "object") {
-            msg = JSON.stringify(msg, null, 2);
-        }
-
+    async error(msg, label = null) {
         const logMsg = {
             level: "ERROR",
             message: `${this.path}:>> `,
         };
 
-        if (label !== null) {
+        if (label) {
             logMsg.message += label + ":>> ";
         }
 
-        logMsg.message += msg;
+        if (msg instanceof Error) {
+            logMsg.message += msg.name + ": " + msg.message + "\n" + msg.stack;
+        }
+
+        if (typeof msg === "object") {
+            logMsg.message += JSON.stringify(msg, null, 2);
+        } else {
+            logMsg.message += msg;
+        }
 
         console.error(JSON.stringify(logMsg));
-        this.#sendMessageToTg(process.env.TG_ERROR_GROUP_ID, tgMsg);
+
+        if (msg instanceof Error) {
+            logMsg.message = logMsg.message.replace(/<|>|&/g, "");
+        }
+
+        await this.#sendMessageToTg(process.env.TG_ERROR_GROUP_ID, logMsg.level, logMsg.message);
     }
 
     /**
      * выводит сообщение о фатальной ошибке
      * @param {String} msg - текст сообщения
-     * @param {String} [label=nul] - текст подписи к сообщению
+     * @param {String} [label=null] - текст подписи к сообщению
      */
-    fatal(msg, label = null) {
-        let tgMsg = msg;
-
-        if (msg instanceof Error) {
-            tgMsg = msg.name + ": " + msg.message;
-            msg = msg.name + ": " + msg.message + "\n" + msg.stack;
-        }
-
-        if (typeof msg === "object") {
-            msg = JSON.stringify(msg, null, 2);
-        }
-
+    async fatal(msg, label = null) {
         const logMsg = {
             level: "FATAL",
             message: `${this.path}:>> `,
         };
 
-        if (label !== null) {
+        if (label) {
             logMsg.message += label + ":>> ";
         }
 
-        logMsg.message += msg;
+        if (msg instanceof Error) {
+            logMsg.message += msg.name + ": " + msg.message + "\n" + msg.stack;
+        }
+
+        if (typeof msg === "object") {
+            logMsg.message += JSON.stringify(msg, null, 2);
+        } else {
+            logMsg.message += msg;
+        }
 
         console.error(JSON.stringify(logMsg));
-        this.#sendMessageToTg(process.env.TG_ERROR_GROUP_ID, tgMsg);
+
+        if (msg instanceof Error) {
+            logMsg.message = logMsg.message.replace(/<|>|&/g, "");
+        }
+
+        await this.#sendMessageToTg(process.env.TG_ERROR_GROUP_ID, logMsg.level, logMsg.message);
     }
 
     /**
      * выводит трассировку до сообщения
      * @param {String} msg - текст сообщения
-     * @param {String} [label=nul] - текст подписи к сообщению
+     * @param {String} [label=null] - текст подписи к сообщению
      */
     trace(msg, label = null) {
         if (msg instanceof Error) {
