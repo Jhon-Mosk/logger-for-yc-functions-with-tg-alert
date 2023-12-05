@@ -21,218 +21,242 @@ const { Telegraf } = require("telegraf");
  * trace: трассировка до места вызова.
  */
 class Logger {
-    constructor(module = "unknown", header = "unknown") {
-        if (module !== "unknown") {
-            this.path = module.filename.split("\\").slice(-2).join("\\");
-        } else {
-            this.path = module;
-        }
-        this.header = header;
+  constructor(module = "unknown", header = "unknown") {
+    if (module !== "unknown") {
+      this.path = module.filename.split("\\").slice(-2).join("\\");
+    } else {
+      this.path = module;
     }
+    this.header = header;
+    this.bot = new Telegraf(process.env.TG_INFO_BOT_TOKEN);
+  }
 
-    /**
-     * для отправки сообщения в телеграм
-     * @param {Number} groupId - идентификатор группы для отправки
-     * @param {String} level - уровень записи
-     * @param {String} msg - сообщение
-     */
-    #sendMessageToTg = async (groupId, level, msg) => {
-        const bot = new Telegraf(process.env.TG_INFO_BOT_TOKEN);
+  /**
+   * для экранирования специальных символов в markdownV2
+   * спецсимолы которые требуется оставить экранировать с помощью 3 символов \
+   * https://core.telegram.org/bots/api#markdownv2-style
+   * @param {string} str исходная строка
+   * @returns {string} строка с экранированными спецсимволами
+   */
+  #markdownV2EscapeSymbols = (str) =>
+    str
+      .replace(/_|\*|\[|\]|\(|\)|~|`|>|#|\+|-|=|'|\||{|}|\.|!/g, "\\$&")
+      .replace(/\\\\/g, "");
 
-        try {
-            await bot.telegram.sendMessage(
-                groupId,
-                `<b>${this.header}</b>\n\n<code>${level}</code>: ${JSON.stringify(msg)}`,
-                {
-                    parse_mode: "HTML",
-                }
-            );
-        } catch (error) {
-            console.log("sendMessageToTgLoggerError:>> ", error);
-        }
+  /**
+   * для отправки сообщения в телеграм
+   * @param {Number} groupId - идентификатор группы для отправки
+   * @param {String} level - уровень записи
+   * @param {String} msg - сообщение
+   */
+  #sendMessageToTg = async (groupId, level, msg) => {
+    try {
+      const escMsg = this.#markdownV2EscapeSymbols(
+        `\\\*${this.header}\\\*\n\n\\\`${level}\\\`: ${JSON.stringify(msg)}`
+      );
+      await this.bot.telegram.sendMessage(groupId, escMsg, {
+        parse_mode: "MarkdownV2",
+      });
+    } catch (error) {
+      console.log("sendMessageToTgLoggerError:>> ", error);
+    }
+  };
+
+  /**
+   * для подготовки сообщения для Yandex.Cloud Logging
+   * @param {string} level уровень лога
+   * @param {string} msg сообщение
+   * @param {string} label подпись
+   * @returns {{level: string, message: string}} сообщение
+   */
+  #prepareMessageForYC = (level, msg, label = null) => {
+    const levels = {
+      debug: "DEBUG",
+      info: "INFO",
+      warn: "WARN",
+      error: "ERROR",
+      fatal: "FATAL",
+      trace: "TRACE",
     };
 
-    /**
-     * выводит сообщения для отладки
-     * @param {String} msg - текст сообщения
-     * @param {String} [label=null] - текст подписи к сообщению
-     */
-    debug(msg, label = null) {
-        if (msg instanceof Error) {
-            msg = msg.name + ": " + msg.message + "\n" + msg.stack;
-        }
-
-        if (typeof msg === "object") {
-            msg = JSON.stringify(msg, null, 2);
-        }
-
-        if (process.env.NODE_ENV === "dev") {
-            const logMsg = {
-                level: "DEBUG",
-                message: `${this.path}:>> `,
-            };
-
-            if (label !== null) {
-                logMsg.message += label + ":>> ";
-            }
-
-            logMsg.message += msg;
-
-            console.log(JSON.stringify(logMsg));
-        }
+    if (msg instanceof Error) {
+      msg = msg.name + ": " + msg.message + "\n" + msg.stack;
     }
 
-    /**
-     * выводит информационные сообщения
-     * @param {String} msg - текст сообщения
-     * @param {String} [label=null] - текст подписи к сообщению
-     */
-    info(msg, label = null) {
-        if (msg instanceof Error) {
-            msg = msg.name + ": " + msg.message + "\n" + msg.stack;
-        }
-
-        if (typeof msg === "object") {
-            msg = JSON.stringify(msg, null, 2);
-        }
-
-        const logMsg = {
-            level: "INFO",
-            message: `${this.path}:>> `,
-        };
-
-        if (label !== null) {
-            logMsg.message += label + ":>> ";
-        }
-
-        logMsg.message += msg;
-
-        console.log(JSON.stringify(logMsg));
+    if (typeof msg === "object") {
+      msg = JSON.stringify(msg, null, 2);
     }
 
-    /**
-     * выводит предупреждения
-     * @param {String} msg - текст сообщения
-     * @param {String} [label=null] - текст подписи к сообщению
-     */
-    warn(msg, label = null) {
-        if (msg instanceof Error) {
-            msg = msg.name + ": " + msg.message + "\n" + msg.stack;
-        }
+    const logMsg = {
+      level: levels[level],
+      message: `${this.path}:>> `,
+    };
 
-        if (typeof msg === "object") {
-            msg = JSON.stringify(msg, null, 2);
-        }
-
-        const logMsg = {
-            level: "WARN",
-            message: `${this.path}:>> `,
-        };
-
-        if (label !== null) {
-            logMsg.message += label + ":>> ";
-        }
-
-        logMsg.message += msg;
-
-        console.log(JSON.stringify(logMsg));
+    if (label !== null) {
+      logMsg.message += label + ":>> ";
     }
 
-    /**
-     * выводит ошибки
-     * @param {String} msg - текст сообщения
-     * @param {String} [label=null] - текст подписи к сообщению
-     */
-    async error(msg, label = null) {
-        const logMsg = {
-            level: "ERROR",
-            message: `${this.path}:>> `,
-        };
+    logMsg.message += msg;
 
-        if (label) {
-            logMsg.message += label + ":>> ";
-        }
+    return logMsg;
+  };
 
-        if (msg instanceof Error) {
-            logMsg.message += msg.name + ": " + msg.message + "\n" + msg.stack;
-        }
-
-        if (typeof msg === "object") {
-            logMsg.message += JSON.stringify(msg, null, 2);
-        } else {
-            logMsg.message += msg;
-        }
-
-        console.error(JSON.stringify(logMsg));
-
-        if (msg instanceof Error) {
-            logMsg.message = logMsg.message.replace(/<|>|&/g, "");
-        }
-
-        await this.#sendMessageToTg(process.env.TG_ERROR_GROUP_ID, logMsg.level, logMsg.message);
+  /**
+   * для подготовки сообщения для консоли
+   * @param {string} level уровень лога
+   * @param {string} msg сообщение
+   * @param {string} label подпись
+   * @returns {string} сообщение
+   */
+  #prepareMessageForConsole = (level, msg, label = null) => {
+    if (msg instanceof Error) {
+      msg = msg.name + ": " + msg.message + "\n" + msg.stack;
     }
 
-    /**
-     * выводит сообщение о фатальной ошибке
-     * @param {String} msg - текст сообщения
-     * @param {String} [label=null] - текст подписи к сообщению
-     */
-    async fatal(msg, label = null) {
-        const logMsg = {
-            level: "FATAL",
-            message: `${this.path}:>> `,
-        };
-
-        if (label) {
-            logMsg.message += label + ":>> ";
-        }
-
-        if (msg instanceof Error) {
-            logMsg.message += msg.name + ": " + msg.message + "\n" + msg.stack;
-        }
-
-        if (typeof msg === "object") {
-            logMsg.message += JSON.stringify(msg, null, 2);
-        } else {
-            logMsg.message += msg;
-        }
-
-        console.error(JSON.stringify(logMsg));
-
-        if (msg instanceof Error) {
-            logMsg.message = logMsg.message.replace(/<|>|&/g, "");
-        }
-
-        await this.#sendMessageToTg(process.env.TG_ERROR_GROUP_ID, logMsg.level, logMsg.message);
+    if (typeof msg === "object") {
+      msg = JSON.stringify(msg, null, 2);
     }
 
-    /**
-     * выводит трассировку до сообщения
-     * @param {String} msg - текст сообщения
-     * @param {String} [label=null] - текст подписи к сообщению
-     */
-    trace(msg, label = null) {
-        if (msg instanceof Error) {
-            msg = msg.name + ": " + msg.message + "\n" + msg.stack;
-        }
+    const COLORS = {
+      black: 0,
+      red: 1,
+      green: 2,
+      yellow: 3,
+      blue: 4,
+      magenta: 5,
+      cyan: 6,
+      white: 7,
+    };
+    const ANSI = {
+      b: 1, // bold (increased intensity)
+      f: 2, // faint (decreased intensity)
+      i: 3, // italic
+      u: 4, // underline
+      l: 5, // blink slow
+      h: 6, // blink rapid
+      n: 7, // negative
+      c: 8, // conceal
+      s: 9, // strikethrough
+    };
+    const esc = (code, s) => `\x1b[${code}m${s}\x1b[0m`;
+    const colorCode = (color, background = false) =>
+      background ? "4" + COLORS[color] : "3" + COLORS[color];
+    const levels = {
+      debug: colorCode("blue"),
+      info: colorCode("green"),
+      warn: colorCode("yellow"),
+      error: colorCode("red"),
+      fatal: colorCode("red", true),
+      trace: colorCode("cyan"),
+    };
 
-        if (typeof msg === "object") {
-            msg = JSON.stringify(msg, null, 2);
-        }
+    const date = new Date().toLocaleString();
+    const escLabel = label !== null ? `${esc(ANSI["u"], label)}:>> ` : "";
+    const message = `${date}: ${esc(
+      levels[level],
+      level.toUpperCase()
+    )}: ${escLabel} ${msg}`;
 
-        const logMsg = {
-            level: "TRACE",
-            message: `${this.path}:>> `,
-        };
+    return message;
+  };
 
-        if (label !== null) {
-            logMsg.message += label + ":>> ";
-        }
-
-        logMsg.message += msg;
-
-        console.log(JSON.stringify(logMsg));
+  /**
+   * выводит сообщения для отладки
+   * @param {String} msg - текст сообщения
+   * @param {String} [label=null] - текст подписи к сообщению
+   */
+  debug(msg, label = null) {
+    if (process.env.NODE_ENV === "local") {
+      console.log(this.#prepareMessageForConsole("debug", msg, label));
+    } else if (process.env.NODE_ENV === "dev") {
+      console.log(
+        JSON.stringify(this.#prepareMessageForYC("debug", msg, label))
+      );
     }
+  }
+
+  /**
+   * выводит информационные сообщения
+   * @param {String} msg - текст сообщения
+   * @param {String} [label=null] - текст подписи к сообщению
+   */
+  info(msg, label = null) {
+    if (process.env.NODE_ENV === "local") {
+      console.log(this.#prepareMessageForConsole("info", msg, label));
+    } else {
+      console.log(
+        JSON.stringify(this.#prepareMessageForYC("info", msg, label))
+      );
+    }
+  }
+
+  /**
+   * выводит предупреждения
+   * @param {String} msg - текст сообщения
+   * @param {String} [label=null] - текст подписи к сообщению
+   */
+  warn(msg, label = null) {
+    if (process.env.NODE_ENV === "local") {
+      console.log(this.#prepareMessageForConsole("warn", msg, label));
+    } else {
+      console.log(
+        JSON.stringify(this.#prepareMessageForYC("warn", msg, label))
+      );
+    }
+  }
+
+  /**
+   * выводит ошибки
+   * @param {String} msg - текст сообщения
+   * @param {String} [label=null] - текст подписи к сообщению
+   */
+  async error(msg, label = null) {
+    const preparedMsg = this.#prepareMessageForYC("error", msg, label);
+    if (process.env.NODE_ENV === "local") {
+      console.log(this.#prepareMessageForConsole("error", msg, label));
+    } else {
+      console.error(JSON.stringify(preparedMsg));
+    }
+    await this.#sendMessageToTg(
+      process.env.TG_ERROR_GROUP_ID,
+      preparedMsg.level,
+      preparedMsg.message
+    );
+  }
+
+  /**
+   * выводит сообщение о фатальной ошибке
+   * @param {String} msg - текст сообщения
+   * @param {String} [label=null] - текст подписи к сообщению
+   */
+  async fatal(msg, label = null) {
+    const preparedMsg = this.#prepareMessageForYC("fatal", msg, label);
+    if (process.env.NODE_ENV === "local") {
+      console.log(this.#prepareMessageForConsole("fatal", msg, label));
+    } else {
+      console.error(JSON.stringify(preparedMsg));
+    }
+    await this.#sendMessageToTg(
+      process.env.TG_ERROR_GROUP_ID,
+      preparedMsg.level,
+      preparedMsg.message
+    );
+  }
+
+  /**
+   * выводит трассировку до сообщения
+   * @param {String} msg - текст сообщения
+   * @param {String} [label=null] - текст подписи к сообщению
+   */
+  trace(msg, label = null) {
+    if (process.env.NODE_ENV === "local") {
+      console.log(this.#prepareMessageForConsole("trace", msg, label));
+    } else {
+      console.log(
+        JSON.stringify(this.#prepareMessageForYC("trace", msg, label))
+      );
+    }
+  }
 }
 
 /**
@@ -241,8 +265,6 @@ class Logger {
  * @param {module} header - заголовок для сообщения в тг
  * @returns {Logger} логгер
  */
-const getLogger = (module, header) => {
-    return new Logger(module, header);
-};
+const getLogger = (module, header) => new Logger(module, header);
 
 module.exports = getLogger;
