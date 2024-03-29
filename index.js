@@ -1,9 +1,8 @@
 /** @module Logger */
 
-const {
-  env: { PWD },
-} = require("node:process");
+const { cwd } = require("node:process");
 
+const workDir = cwd();
 /**
  * требуется установить telegraf
  * требуется в переменных окружения указать:
@@ -27,7 +26,7 @@ const { Telegraf } = require("telegraf");
 class Logger {
   constructor(module = "unknown", header = "unknown") {
     if (module !== "unknown") {
-      this.path = module.filename.slice(PWD.length + 1);
+      this.path = module.filename.slice(workDir.length + 1);
     } else {
       this.path = module;
     }
