@@ -1,28 +1,42 @@
-Позволяет выводить в лог яндекса сообщения используя уровни яндекса.
+# logger-for-yc-functions-with-tg-alert
 
-Подключение: `const log = require("logger-for-yc-functions-with-tg-alert")(module, 'Заголовок для сообщения в тг');`.
+Logger that uses [Yandex Cloud Logging](https://yandex.cloud/ru/services/logging) levels and allows you to send notifications to Telegram, without dependencies.
 
-Вид в логе: Дата, Время | Уровень | путь до вызова лога:>> | подпись к сообщению, если указана:>> | ваше сообщение
+## Installation
 
-Если нет переменной окружения `NODE_ENV=dev`, то сообщения уровня debug выводиться не будут.
-Если стоит переменная окружения `NODE_ENV=local`, то форматирование сообщений поменяется для вывода в консоль.
+```
+npm install logger-for-yc-functions-with-tg-alert
+```
 
-Для отправки сообщений в телеграм:
+## Usage
 
-- требуется в переменных окружения указать:
-  - TG_INFO_BOT_TOKEN - токен тг бота для отправки информационных сообщений
-  - TG_ERROR_GROUP_ID - идентификатор группы телеграм для информирования об ошибках
-- при создании класса указать заголовок сообщения (название функции)
-- TG_INFO_BOT добавить в группу TG_ERROR_GROUP
-- для сообщений включен parse_mode: ["MarkdownV2"](https://core.telegram.org/bots/api#markdownv2-style)
-- спецсимолы которые требуется оставить экранировать с помощью 3 символов \
+```js
+const log = require('./index')({
+  runtime: 'local',
+  level: 'debug',
+  header: 'Telegram message header',
+  chatId: -1001234567890,
+  botToken: "1234567890:DSfgfgweg43t34gegss34hu54u533gerg",
+  extra: {
+    parse_mode: 'HTML',
+  },
+});
 
-### Вид сообщения в тг
+const error = new Error('error');
 
-##### заголовок сообщения
+log.debug('debug', 'label');
+log.debug({ id: 1 }, 'label');
+log.info('info', 'label');
+log.warn('warn', 'label');
+log.error('<error>&</error>', 'label');
+log.error(error, 'label');
+log.fatal('fatal', 'label');
+log.trace('trace', 'label');
+log.sendToTg('<code>&</code>', 'label');
+log.sendToTg({ id: 1 }, 'label');
+log.sendToTg(error, 'label');
+log.sendToTg(14214, 'label');
+```
 
-ERROR: 2023-06-13T09:12:24 UTC [/.../.../.../index.js] подпись к сообщению:>> сообщение
-
-###### P.S.
-
-для выяснения идентификатора группы для информирования об ошибках можете воспользоваться [ботом](https://t.me/tg_moy_id_bot).
+- if `runtime = 'local'` is set, then the message will be formatted for output to the terminal
+- `extra` - parameters for Telegram method [sendMessage](https://core.telegram.org/bots/api#sendmessage)

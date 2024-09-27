@@ -1,19 +1,21 @@
 {
   "name": "logger-for-yc-functions-with-tg-alert",
-  "version": "2.0.3",
-  "description": "логгер для функций яндекс облака, позволяет выводить логи используя уровни яндекса, при ошибках отправляет уведомления в группу телеграма",
+  "version": "3.0.0",
+  "description": "Logger that uses Yandex Cloud Logging levels and allows you to send notifications to Telegram, without dependencies.",
   "keywords": [
     "yandex",
     "yandex cloud",
     "logger",
     "serveless",
-    "alert"
+    "alert",
+    "telegram"
   ],
   "main": "index.js",
   "author": "Evgeniy Politiko <Jhon-mosk@yandex.ru> (https://jhon-mosk.ru/)",
   "license": "MIT",
-  "dependencies": {
-    "telegraf": "^4.16.3"
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=7.24.2"
   },
   "bugs": {
     "url": "https://github.com/Jhon-Mosk/logger-for-yc-functions-with-tg-alert/issues"
@@ -21,8 +23,5 @@
   "homepage": "https://github.com/Jhon-Mosk/logger-for-yc-functions-with-tg-alert/blob/master/README.md",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "devDependencies": {
-    "dotenv": "^16.3.1"
   }
 }
