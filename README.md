@@ -11,7 +11,7 @@ npm install logger-for-yc-functions-with-tg-alert
 ## Usage
 
 ```js
-const log = require('./index')({
+const log = require('logger-for-yc-functions-with-tg-alert')({
   runtime: 'local',
   level: 'debug',
   header: 'Telegram message header',

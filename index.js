@@ -163,7 +163,6 @@ class Logger {
   #level;
   #chatId;
   #botToken;
-  #bot;
   #extra;
 
   constructor(options = {}) {
