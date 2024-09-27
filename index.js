@@ -84,7 +84,7 @@ const prepareMessageForYC = (level, msg, label = null) => {
     prepared.message = label + ':>> ' + prepared.message;
   }
 
-  return prepared;
+  return JSON.stringify(prepared);
 };
 
 /**

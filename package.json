@@ -1,6 +1,6 @@
 {
   "name": "logger-for-yc-functions-with-tg-alert",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "description": "Logger that uses Yandex Cloud Logging levels and allows you to send notifications to Telegram, without dependencies.",
   "keywords": [
     "yandex",
